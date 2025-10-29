@@ -97,18 +97,30 @@
     var autoRotateRight = !!props.autoRotateRight;
     var rotateSeconds = props.rotateSeconds || 20;
 
+    var handoverPanel = rightPanels.length > 0 ? rightPanels[0] : null;
+    var rotatingPanels = rightPanels.length > 1 ? rightPanels.slice(1) : [];
+    var canAutoRotate = rotatingPanels.length > 1;
+
     var _React$useState2 = React.useState(0),
         rightIndex = _React$useState2[0],
         setRightIndex = _React$useState2[1];
 
-    var _React$useState3 = React.useState(autoRotateRight),
+    var _React$useState3 = React.useState(autoRotateRight && canAutoRotate),
         rotateRight = _React$useState3[0],
         setRotateRight = _React$useState3[1];
 
+    React.useEffect(function () {
+      if (rightIndex >= rotatingPanels.length && rotatingPanels.length) setRightIndex(0);
+    }, [rotatingPanels.length, rightIndex]);
+
+    React.useEffect(function () {
+      if (!canAutoRotate && rotateRight) setRotateRight(false);
+    }, [canAutoRotate, rotateRight]);
+
     useInterval(function () {
-      if (!rotateRight || rightPanels.length <= 1) return;
-      setRightIndex(function (i) { return (i + 1) % rightPanels.length; });
-    }, rotateRight ? rotateSeconds * 1000 : null);
+      if (!rotateRight || rotatingPanels.length <= 1) return;
+      setRightIndex(function (i) { return (i + 1) % rotatingPanels.length; });
+    }, rotateRight && canAutoRotate ? rotateSeconds * 1000 : null);
 
     function pickRight(idx) { setRightIndex(idx); }
 
@@ -116,24 +128,34 @@
       React.createElement("div", { className: "header" },
         React.createElement("h1", null, title),
         React.createElement("div", { className: "controls" },
-          React.createElement("span", null, "Right column:"),
-          React.createElement("button", { onClick: function () { return setRotateRight(function (v) { return !v; }); } }, rotateRight ? "Pause" : "Auto-rotate"),
-          React.createElement("span", { style: { color: "#9aa6b2", fontSize: 12 } }, "(Bullbat is always visible on the left)")
+          React.createElement("span", null, "Bottom row:"),
+          React.createElement("button", {
+            onClick: function () { return setRotateRight(function (v) { return !v; }); },
+            disabled: !canAutoRotate
+          }, rotateRight ? "Pause" : "Auto-rotate"),
+          React.createElement("span", { style: { color: "#9aa6b2", fontSize: 12 } }, "(Bullbat and handover stay fixed across the top)")
         )
       ),
       React.createElement("div", { className: "layout" },
-        React.createElement(Panel, { panel: Object.assign({ title: "Bullbat" }, bullbat) }),
-        React.createElement("div", { className: "rightColumn" },
-          React.createElement("div", { id: "rightSwitcher" },
-            rightPanels.map(function (p, i) {
+        React.createElement("div", { className: "topRow" },
+          React.createElement("div", { className: "topCell" },
+            React.createElement(Panel, { panel: Object.assign({ title: "Bullbat" }, bullbat) })
+          ),
+          React.createElement("div", { className: "topCell" },
+            React.createElement(Panel, { panel: handoverPanel })
+          )
+        ),
+        React.createElement("div", { className: "bottomRow" },
+          rotatingPanels.length > 0 && React.createElement("div", { className: "tabs rightSwitcher" },
+            rotatingPanels.map(function (p, i) {
               return React.createElement("button", {
                 key: p.id || i,
-                className: i === rightIndex ? "active" : "",
+                className: "tab" + (i === rightIndex ? " active" : ""),
                 onClick: function () { setRotateRight(false); pickRight(i); }
-              }, p.label || p.title || ("Panel " + (i + 1)));
+              }, p.label || p.title || ("Panel " + (i + 2)));
             })
           ),
-          React.createElement(Panel, { panel: rightPanels[rightIndex] })
+          rotatingPanels.length > 0 ? React.createElement(Panel, { panel: rotatingPanels[rightIndex] }) : null
         )
       ),
       React.createElement("div", { className: "footer" }, "Tips: Use a signed-in browser profile for Google/Bullbat; set refreshMinutes per panel in config.js")
