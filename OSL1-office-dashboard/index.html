@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>OSL1 Office TV Dashboard</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./style.css"/>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- 1) Load config FIRST (edit config.js with your real URLs) -->
+    <script src="./config.js"></script>
+
+    <!-- 2) React UMD builds (no modules, robust on kiosk setups) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- 3) App code -->
+    <script src="./app.nomodule.js"></script>
+
+    <!-- 4) Bootstrap -->
+    <script>
+      (function () {
+        const rootEl = document.getElementById("root");
+        const root = ReactDOM.createRoot(rootEl);
+        root.render(React.createElement(window.App, window.DASHBOARD_CONFIG || {}));
+      })();
+    </script>
+  </body>
+</html>
