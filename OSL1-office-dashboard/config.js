@@ -10,7 +10,7 @@ window.DASHBOARD_CONFIG = {
   rightPanels: [
     { id: "handover", label: "Handover", url: "https://docs.google.com/document/d/1Qk2EOQcU2dj6pVBFVSy_RwSFj8xfgzBkWan1TH24MSk/edit?rm=minimal", refreshMinutes: 0 },
     { id: "visitors", label: "Visitor Access", url: "https://docs.google.com/spreadsheets/d/12tct8yLyvreL8V2uqRT3Kgk4Z3L8wBIcaGmjBHJMrxs/edit?rm=minimal", refreshMinutes: 0 },
-    { id: "deliveries", label: "Delivery Tracking", url: "https://docs.google.com/spreadsheets/d/12tct8yLyvreL8V2uqRT3Kgk4Z3L8wBIcaGmjBHJMrxs/edit?rm=minimal", refreshMinutes: 0 }
+    { id: "deliveries", label: "Delivery Tracking", url: "https://docs.google.com/spreadsheets/d/1dOZrLsETgvDYqPs_eEtMDW0UINaxVvJmKxETz256LMI/edit?rm=minimal", refreshMinutes: 0 }
   ],
   autoRotateRight: true,
   rotateSeconds: 20,
