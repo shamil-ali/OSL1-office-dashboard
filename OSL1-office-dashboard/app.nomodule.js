@@ -13,6 +13,15 @@
 
   function Panel(props) {
     var panel = props.panel;
+    var panelUrl = React.useMemo(function () {
+      if (!panel || !panel.url) return null;
+      try { return new URL(panel.url, window.location.href); }
+      catch (err) { return null; }
+    }, [panel && panel.url]);
+    var isCrossOrigin = !!(panelUrl && panelUrl.origin !== window.location.origin);
+    var isInsecureCrossOrigin = !!(panelUrl && panelUrl.protocol !== "https:" && isCrossOrigin);
+    var panelTitle = panel && (panel.title || panel.label || panel.id);
+    var panelClassName = "panel" + (isInsecureCrossOrigin ? " panel--blocked" : "");
     var _React$useState = React.useState(0),
         key = _React$useState[0],
         setKey = _React$useState[1];
@@ -20,6 +29,11 @@
     var _React$useState2 = React.useState(false),
         needsStorageAccess = _React$useState2[0],
         setNeedsStorageAccess = _React$useState2[1];
+    var externalWindowRef = React.useRef(null);
+    var externalWatchRef = React.useRef(null);
+    var _React$useState3 = React.useState(false),
+        externalTabOpen = _React$useState3[0],
+        setExternalTabOpen = _React$useState3[1];
 
     React.useEffect(function () {
       if (!panel || !panel.refreshMinutes) return;
@@ -31,10 +45,8 @@
     React.useEffect(function () { setNeedsStorageAccess(false); }, [panel && panel.url, key]);
 
     React.useEffect(function () {
-      if (!panel || !panel.url) return;
-      var origin;
-      try { origin = new URL(panel.url, window.location.href).origin; }
-      catch (err) { return; }
+      if (!panelUrl || isInsecureCrossOrigin) return;
+      var origin = panelUrl.origin;
 
       function onMessage(event) {
         if (event.origin !== origin) return;
@@ -46,12 +58,30 @@
 
       window.addEventListener("message", onMessage);
       return function () { window.removeEventListener("message", onMessage); };
+    }, [panelUrl && panelUrl.origin, isInsecureCrossOrigin]);
+
+    React.useEffect(function () {
+      return function () {
+        if (externalWatchRef.current) {
+          clearInterval(externalWatchRef.current);
+          externalWatchRef.current = null;
+        }
+        externalWindowRef.current = null;
+      };
+    }, []);
+
+    React.useEffect(function () {
+      setExternalTabOpen(false);
+      if (externalWatchRef.current) {
+        clearInterval(externalWatchRef.current);
+        externalWatchRef.current = null;
+      }
+      externalWindowRef.current = null;
     }, [panel && panel.url]);
 
     function getPanelOrigin() {
-      if (!panel || !panel.url) return null;
-      try { return new URL(panel.url, window.location.href).origin; }
-      catch (err) { return null; }
+      if (!panelUrl) return null;
+      return panelUrl.origin;
     }
 
     function postToIframe(message) {
@@ -70,9 +100,58 @@
       postToIframe({ type: "REQUEST_STORAGE_ACCESS" });
     }
 
+    function cleanupExternalWatch() {
+      if (externalWatchRef.current) {
+        clearInterval(externalWatchRef.current);
+        externalWatchRef.current = null;
+      }
+      externalWindowRef.current = null;
+    }
+
+    function launchExternalTab() {
+      if (!panelUrl) return;
+      if (externalWindowRef.current && !externalWindowRef.current.closed) {
+        try { externalWindowRef.current.close(); }
+        catch (err) {}
+      }
+      cleanupExternalWatch();
+      var child = window.open(panelUrl.href, "_blank");
+      if (!child) {
+        window.alert("Pop-up was blocked. Allow pop-ups for this dashboard and try again.");
+        return;
+      }
+      setExternalTabOpen(true);
+      externalWindowRef.current = child;
+      if (externalWatchRef.current) {
+        clearInterval(externalWatchRef.current);
+      }
+      externalWatchRef.current = setInterval(function () {
+        var win = externalWindowRef.current;
+        if (!win || win.closed) {
+          cleanupExternalWatch();
+          setExternalTabOpen(false);
+          try { window.focus(); } catch (err) {}
+        }
+      }, 700);
+    }
+
     if (!panel) return null;
-    return React.createElement("div", { className: "panel" },
-      React.createElement("div", { className: "title" }, panel.title || panel.label || panel.id),
+
+    if (isInsecureCrossOrigin) {
+      return React.createElement("div", { className: panelClassName },
+        React.createElement("div", { className: "title" }, panelTitle),
+        React.createElement("div", { className: "panelNotice" },
+          React.createElement("button", {
+            type: "button",
+            className: "panelNoticePrimary",
+            onClick: launchExternalTab
+          }, externalTabOpen ? "Re-open Bullbat" : "Log in to Bullbat")
+        )
+      );
+    }
+
+    return React.createElement("div", { className: panelClassName },
+      React.createElement("div", { className: "title" }, panelTitle),
       needsStorageAccess && React.createElement("div", { className: "storageAccessPrompt" },
         React.createElement("p", null, "We need permission to use cookies from ", React.createElement("strong", null, panel && panel.label || panel && panel.title || "this panel"), " to finish signing you in."),
         React.createElement("button", { onClick: requestStorageAccess }, "Allow cookie access")
